@@ -102,9 +102,11 @@ class EndlessDriverGame {
     
     setupEventListeners() {
         // Keyboard controls
+        const preventDefaultKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '];
+        
         window.addEventListener('keydown', (e) => {
             this.keys[e.key] = true;
-            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) {
+            if (preventDefaultKeys.includes(e.key)) {
                 e.preventDefault();
             }
         });

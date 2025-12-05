@@ -223,7 +223,6 @@ body {
     transition: transform 0.2s, box-shadow 0.2s;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
-    pointer-events: auto;
 }
 
 .btn-primary:hover {
