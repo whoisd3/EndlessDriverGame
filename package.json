@@ -1,0 +1,26 @@
+{
+  "name": "endless-driver-game",
+  "version": "1.0.0",
+  "description": "A mobile-optimized endless driving game with GPU-accelerated rendering",
+  "main": "game.js",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "build": "echo 'Build: Minifying assets...' && npm run minify-js && npm run minify-css",
+    "minify-js": "terser game.js -o game.min.js -c -m",
+    "minify-css": "cleancss -o styles.min.css styles.css",
+    "test": "echo 'Running performance tests...' && node test-performance.js"
+  },
+  "keywords": [
+    "game",
+    "mobile",
+    "endless-runner",
+    "canvas",
+    "gpu-accelerated"
+  ],
+  "author": "whoisd3",
+  "license": "MIT",
+  "devDependencies": {
+    "terser": "^5.19.0",
+    "clean-css-cli": "^5.6.2"
+  }
+}
