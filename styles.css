@@ -1,0 +1,297 @@
+/* Global styles with GPU acceleration */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+    background: #000;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1e 100%);
+}
+
+/* Canvas with GPU acceleration */
+#game-canvas {
+    display: block;
+    background: #000;
+    touch-action: none;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Touch controls */
+.touch-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10;
+    display: none;
+}
+
+@media (pointer: coarse) {
+    .touch-controls {
+        display: block;
+    }
+}
+
+.joystick-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+.joystick-base {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+.joystick-stick {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) translateZ(0);
+    -webkit-transform: translate(-50%, -50%) translateZ(0);
+    transition: none;
+    will-change: transform;
+}
+
+/* UI overlay */
+.ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+.hud {
+    padding: 20px;
+    color: white;
+    font-size: 18px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: space-between;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+.score, .fps {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px 15px;
+    border-radius: 5px;
+}
+
+/* Loading screen */
+.loading-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+.loading-content {
+    text-align: center;
+    color: white;
+}
+
+.loading-content h2 {
+    font-size: 48px;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.progress-bar {
+    width: 300px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 auto 20px;
+}
+
+.progress {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+    transition: width 0.3s ease;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+#loading-text {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+/* Start and game over screens */
+.start-screen,
+.game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.menu-content {
+    text-align: center;
+    color: white;
+    padding: 20px;
+}
+
+.menu-content h1 {
+    font-size: 64px;
+    margin-bottom: 40px;
+    text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.8);
+}
+
+.menu-content h2 {
+    font-size: 48px;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.final-score {
+    font-size: 32px;
+    margin-bottom: 30px;
+    color: #00d2ff;
+}
+
+.btn-primary {
+    padding: 15px 40px;
+    font-size: 24px;
+    background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    pointer-events: auto;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px) translateZ(0);
+    -webkit-transform: translateY(-2px) translateZ(0);
+    box-shadow: 0 6px 20px rgba(0, 210, 255, 0.6);
+}
+
+.btn-primary:active {
+    transform: translateY(0) translateZ(0);
+    -webkit-transform: translateY(0) translateZ(0);
+}
+
+.controls-info {
+    margin-top: 30px;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.controls-info p {
+    margin: 5px 0;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .hud {
+        font-size: 14px;
+        padding: 10px;
+    }
+    
+    .score, .fps {
+        padding: 5px 10px;
+    }
+    
+    .menu-content h1 {
+        font-size: 40px;
+    }
+    
+    .menu-content h2 {
+        font-size: 32px;
+    }
+    
+    .final-score {
+        font-size: 24px;
+    }
+    
+    .btn-primary {
+        font-size: 20px;
+        padding: 12px 30px;
+    }
+    
+    .loading-content h2 {
+        font-size: 36px;
+    }
+    
+    .progress-bar {
+        width: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .joystick-container {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .joystick-stick {
+        width: 40px;
+        height: 40px;
+    }
+}

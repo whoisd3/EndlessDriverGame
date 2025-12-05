@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
+    <title>Endless Driver - Mobile Optimized</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- Mobile touch controls -->
+        <div id="touch-controls" class="touch-controls">
+            <div id="joystick-container" class="joystick-container">
+                <div id="joystick-base" class="joystick-base"></div>
+                <div id="joystick-stick" class="joystick-stick"></div>
+            </div>
+        </div>
+        
+        <!-- UI overlay -->
+        <div id="ui-overlay" class="ui-overlay">
+            <div class="hud">
+                <div class="score">Score: <span id="score">0</span></div>
+                <div class="fps">FPS: <span id="fps">60</span></div>
+            </div>
+        </div>
+        
+        <!-- Loading screen -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="loading-content">
+                <h2>Endless Driver</h2>
+                <div class="progress-bar">
+                    <div id="progress" class="progress"></div>
+                </div>
+                <p id="loading-text">Loading assets...</p>
+            </div>
+        </div>
+        
+        <!-- Start screen -->
+        <div id="start-screen" class="start-screen hidden">
+            <div class="menu-content">
+                <h1>Endless Driver</h1>
+                <button id="start-button" class="btn-primary">Start Game</button>
+                <div class="controls-info">
+                    <p><strong>Desktop:</strong> Arrow Keys or WASD</p>
+                    <p><strong>Mobile:</strong> Touch joystick or swipe</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game over screen -->
+        <div id="game-over-screen" class="game-over-screen hidden">
+            <div class="menu-content">
+                <h2>Game Over</h2>
+                <p class="final-score">Score: <span id="final-score">0</span></p>
+                <button id="restart-button" class="btn-primary">Play Again</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
