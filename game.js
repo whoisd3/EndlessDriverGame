@@ -21,6 +21,11 @@ class EndlessDriverGame {
         this.lastFrameTime = performance.now();
         this.frameTimeAccumulator = 0;
         this.frameCountForFPS = 0;
+        this.deltaTime = 0;
+        
+        // Adaptive quality
+        this.lowFPSCount = 0;
+        this.qualityLevel = 1; // 1 = high, 0.75 = medium, 0.5 = low
         
         // Player
         this.player = {
@@ -32,10 +37,12 @@ class EndlessDriverGame {
             color: '#00d2ff'
         };
         
-        // Obstacles
+        // Obstacles with object pooling
         this.obstacles = [];
+        this.obstaclePool = [];
         this.obstacleSpawnTimer = 0;
         this.obstacleSpawnInterval = 100;
+        this.maxObstacles = 10;
         
         // Road lanes
         this.lanes = [0.25, 0.5, 0.75]; // Relative positions
@@ -46,12 +53,17 @@ class EndlessDriverGame {
         this.touchInput = { x: 0, y: 0, active: false };
         this.swipeStartX = 0;
         this.swipeThreshold = 50;
+        this.lastInputTime = 0;
+        this.inputThrottle = 16; // ~60 FPS
         
         // Asset loading
         this.assetsLoaded = false;
         
         // Dynamic resolution scaling
         this.pixelRatio = this.getOptimalPixelRatio();
+        
+        // Rendering optimization flags
+        this.roadStyleCached = false;
         
         this.init();
     }
@@ -163,6 +175,13 @@ class EndlessDriverGame {
         let joystickActive = false;
         
         const handleJoystickMove = (clientX, clientY) => {
+            // Throttle input processing for better performance
+            const now = performance.now();
+            if (now - this.lastInputTime < this.inputThrottle) {
+                return;
+            }
+            this.lastInputTime = now;
+            
             const rect = joystickContainer.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
@@ -181,7 +200,7 @@ class EndlessDriverGame {
                 this.touchInput.y = deltaY;
             }
             
-            // Update joystick visual
+            // Update joystick visual with transform (GPU accelerated)
             joystickStick.style.transform = `translate(calc(-50% + ${this.touchInput.x}px), calc(-50% + ${this.touchInput.y}px)) translateZ(0)`;
         };
         
@@ -193,8 +212,8 @@ class EndlessDriverGame {
         }, { passive: false });
         
         joystickContainer.addEventListener('touchmove', (e) => {
-            e.preventDefault();
             if (joystickActive) {
+                e.preventDefault();
                 handleJoystickMove(e.touches[0].clientX, e.touches[0].clientY);
             }
         }, { passive: false });
@@ -252,10 +271,18 @@ class EndlessDriverGame {
         this.gameState = 'playing';
         this.score = 0;
         this.gameSpeed = 5;
+        
+        // Return all active obstacles to pool before clearing
+        for (const obstacle of this.obstacles) {
+            this.returnObstacleToPool(obstacle);
+        }
         this.obstacles = [];
+        
         this.obstacleSpawnTimer = 0;
         this.player.lane = 1;
         this.frameCount = 0;
+        this.deltaTime = 1;
+        this.lastFrameTime = performance.now();
         
         this.gameLoop();
     }
@@ -305,11 +332,12 @@ class EndlessDriverGame {
         // Update obstacles
         for (let i = this.obstacles.length - 1; i >= 0; i--) {
             const obstacle = this.obstacles[i];
-            obstacle.y += this.gameSpeed;
+            obstacle.y += this.gameSpeed * this.deltaTime;
             
-            // Remove off-screen obstacles
+            // Remove off-screen obstacles and return to pool
             if (obstacle.y > this.gameHeight) {
                 this.obstacles.splice(i, 1);
+                this.returnObstacleToPool(obstacle);
                 this.score += 10;
                 continue;
             }
@@ -321,24 +349,48 @@ class EndlessDriverGame {
             }
         }
         
-        // Increase difficulty
+        // Increase difficulty (every ~10 seconds at 60 FPS)
         if (this.frameCount % 600 === 0) {
-            this.gameSpeed += 0.5;
+            this.gameSpeed = Math.min(this.gameSpeed + 0.5, 15); // Cap max speed
             this.obstacleSpawnInterval = Math.max(50, this.obstacleSpawnInterval - 5);
         }
     }
     
     spawnObstacle() {
+        // Limit active obstacles for performance
+        if (this.obstacles.length >= this.maxObstacles) {
+            return;
+        }
+        
         const lane = Math.floor(Math.random() * 3);
-        const obstacle = {
-            x: this.lanes[lane] * this.gameWidth - 35,
-            y: -80,
-            width: 70,
-            height: 80,
-            lane: lane,
-            color: '#ff4757'
-        };
+        
+        // Try to reuse from pool
+        let obstacle;
+        if (this.obstaclePool.length > 0) {
+            obstacle = this.obstaclePool.pop();
+            obstacle.x = this.lanes[lane] * this.gameWidth - 35;
+            obstacle.y = -80;
+            obstacle.lane = lane;
+        } else {
+            // Create new obstacle if pool is empty
+            obstacle = {
+                x: this.lanes[lane] * this.gameWidth - 35,
+                y: -80,
+                width: 70,
+                height: 80,
+                lane: lane,
+                color: '#ff4757'
+            };
+        }
+        
         this.obstacles.push(obstacle);
+    }
+    
+    returnObstacleToPool(obstacle) {
+        // Return obstacle to pool for reuse
+        if (this.obstaclePool.length < 20) {
+            this.obstaclePool.push(obstacle);
+        }
     }
     
     checkCollision(player, obstacle) {
@@ -356,40 +408,46 @@ class EndlessDriverGame {
         // Draw road
         this.drawRoad();
         
-        // Draw player
-        this.ctx.fillStyle = this.player.color;
-        this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
-        
-        // Draw obstacles
+        // Batch draw obstacles (same color, one fillStyle call)
         this.ctx.fillStyle = '#ff4757';
         for (const obstacle of this.obstacles) {
             this.ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
         }
         
-        // Update score display
-        document.getElementById('score').textContent = this.score;
+        // Draw player (separate color)
+        this.ctx.fillStyle = this.player.color;
+        this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
+        
+        // Update score display only when changed (reduce DOM updates)
+        const scoreElement = document.getElementById('score');
+        const newScore = String(this.score);
+        if (scoreElement.textContent !== newScore) {
+            scoreElement.textContent = newScore;
+        }
     }
     
     drawRoad() {
         // Draw lane dividers with scrolling effect
         const lineHeight = 40;
         const lineGap = 20;
-        const offset = (this.frameCount * this.gameSpeed) % (lineHeight + lineGap);
+        const offset = (this.frameCount * this.gameSpeed * this.deltaTime) % (lineHeight + lineGap);
         
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-        this.ctx.lineWidth = 2;
+        // Cache line style setup
+        if (!this.roadStyleCached) {
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            this.ctx.lineWidth = 2;
+            this.roadStyleCached = true;
+        }
+        
         this.ctx.setLineDash([lineHeight, lineGap]);
         
-        // Draw lane lines
+        // Draw both lane lines in one path for better performance
         const lane1X = this.gameWidth / 3;
         const lane2X = (this.gameWidth / 3) * 2;
         
         this.ctx.beginPath();
         this.ctx.moveTo(lane1X, -offset);
         this.ctx.lineTo(lane1X, this.gameHeight);
-        this.ctx.stroke();
-        
-        this.ctx.beginPath();
         this.ctx.moveTo(lane2X, -offset);
         this.ctx.lineTo(lane2X, this.gameHeight);
         this.ctx.stroke();
@@ -402,6 +460,9 @@ class EndlessDriverGame {
         const delta = currentTime - this.lastFrameTime;
         this.lastFrameTime = currentTime;
         
+        // Calculate normalized delta time (targeting 60 FPS)
+        this.deltaTime = delta / (1000 / 60);
+        
         this.frameTimeAccumulator += delta;
         this.frameCountForFPS++;
         
@@ -409,8 +470,49 @@ class EndlessDriverGame {
         if (this.frameTimeAccumulator >= 500) {
             this.fps = Math.round((this.frameCountForFPS * 1000) / this.frameTimeAccumulator);
             document.getElementById('fps').textContent = this.fps;
+            
+            // Adaptive quality: reduce quality if FPS drops
+            if (this.fps < 45 && this.qualityLevel > 0.5) {
+                this.lowFPSCount++;
+                if (this.lowFPSCount > 3) {
+                    this.qualityLevel = Math.max(0.5, this.qualityLevel - 0.25);
+                    this.adjustQuality();
+                    this.lowFPSCount = 0;
+                }
+            } else if (this.fps >= 55 && this.qualityLevel < 1) {
+                this.lowFPSCount = 0;
+                // Gradually restore quality
+                this.safeRequestIdleCallback(() => {
+                    if (this.fps >= 55) {
+                        this.qualityLevel = Math.min(1, this.qualityLevel + 0.25);
+                        this.adjustQuality();
+                    }
+                });
+            } else {
+                this.lowFPSCount = 0;
+            }
+            
             this.frameTimeAccumulator = 0;
             this.frameCountForFPS = 0;
+        }
+    }
+    
+    adjustQuality() {
+        // Adjust rendering quality based on performance
+        if (this.qualityLevel < 1) {
+            // Reduce pixel ratio for better performance
+            const reducedRatio = this.getOptimalPixelRatio() * this.qualityLevel;
+            this.pixelRatio = Math.max(1, reducedRatio);
+            this.resizeCanvas();
+        }
+    }
+    
+    safeRequestIdleCallback(callback) {
+        // Polyfill for requestIdleCallback
+        if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(callback);
+        } else {
+            setTimeout(callback, 100);
         }
     }
     
